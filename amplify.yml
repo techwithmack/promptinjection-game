@@ -1,0 +1,28 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        # Next.js SSR on Amplify does not receive console env vars at runtime by default.
+        # Write them into .env.production before build so API routes can read process.env.
+        # See: https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html
+        - env | grep -e GEMINI_API_KEY >> .env.production || true
+        - env | grep -e GEMINI_MODEL >> .env.production || true
+        - |
+          if ! grep -q '^GEMINI_API_KEY=' .env.production 2>/dev/null; then
+            echo "ERROR: GEMINI_API_KEY missing from build environment."
+            echo "Add it in Amplify: Hosting > Environment variables (All branches), then redeploy."
+            exit 1
+          fi
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
