@@ -68,7 +68,7 @@ export function FlagSubmission() {
           Submit your flag
         </h2>
         <p className="mt-1 text-xs text-muted">
-          Found Secret 2? Enter the full flag below to complete the challenge.
+          Found the hidden flag? Enter it below to complete the challenge.
         </p>
 
         {hasWon ? (

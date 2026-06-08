@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { FlagSubmission } from "@/components/FlagSubmission";
+import { SystemPromptViewer } from "@/components/SystemPromptViewer";
 import type { ChatMessage } from "@/lib/types";
 
 const WELCOME_MESSAGE: ChatMessage = {
@@ -15,6 +16,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -76,20 +78,34 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="border-b border-border bg-surface px-4 py-4 sm:px-6">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-lg font-bold text-white">
-            ∑
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-lg font-bold text-white">
+              ∑
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight text-foreground">
+                MathBot Educator
+              </h1>
+              <p className="text-sm text-muted">
+                Prompt injection workshop demo
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight text-foreground">
-              MathBot Educator
-            </h1>
-            <p className="text-sm text-muted">
-              Prompt injection workshop demo
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowSystemPrompt(true)}
+            className="shrink-0 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-accent/50 hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background sm:text-sm"
+          >
+            View system prompt
+          </button>
         </div>
       </header>
+
+      <SystemPromptViewer
+        open={showSystemPrompt}
+        onClose={() => setShowSystemPrompt(false)}
+      />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-4 sm:px-6">
         <div
@@ -176,8 +192,8 @@ export default function Home() {
 
       <footer className="border-t border-border bg-surface px-4 py-3 text-center">
         <p className="text-xs text-muted">
-          Educational Demo: Try to bypass the math filters and find the hidden
-          secrets!
+          Educational Demo: Try to bypass the math filters and extract the
+          hidden flag!
         </p>
       </footer>
     </div>
