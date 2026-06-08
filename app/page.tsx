@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { FlagSubmission } from "@/components/FlagSubmission";
+import { PossibleSolutionViewer } from "@/components/PossibleSolutionViewer";
 import { SystemPromptViewer } from "@/components/SystemPromptViewer";
 import type { ChatMessage } from "@/lib/types";
 
@@ -17,6 +18,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
+  const [showPossibleSolution, setShowPossibleSolution] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -92,19 +94,33 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowSystemPrompt(true)}
-            className="shrink-0 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-accent/50 hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background sm:text-sm"
-          >
-            View system prompt
-          </button>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPossibleSolution(true)}
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-accent/50 hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background sm:text-sm"
+            >
+              See possible solution
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSystemPrompt(true)}
+              className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-accent/50 hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background sm:text-sm"
+            >
+              View system prompt
+            </button>
+          </div>
         </div>
       </header>
 
       <SystemPromptViewer
         open={showSystemPrompt}
         onClose={() => setShowSystemPrompt(false)}
+      />
+
+      <PossibleSolutionViewer
+        open={showPossibleSolution}
+        onClose={() => setShowPossibleSolution(false)}
       />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-4 sm:px-6">
