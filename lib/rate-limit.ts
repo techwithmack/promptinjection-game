@@ -46,17 +46,18 @@ export function checkRateLimit(key: string): {
 }
 
 export function getClientIp(request: Request): string {
-  // This app runs behind exactly one trusted proxy hop (CloudFront, via
-  // Amplify Hosting), which appends the real viewer IP as the LAST entry in
-  // X-Forwarded-For. Any earlier entries are client-supplied and trivially
-  // spoofable — a client can send "X-Forwarded-For: <anything>" and
-  // CloudFront just appends the real IP after it, so trusting the first
-  // entry lets every request claim a fresh identity and bypass the limiter
-  // entirely. Only the last entry is something the client can't control.
-  const xff = request.headers.get("x-forwarded-for");
-  if (xff) {
-    const parts = xff.split(",").map((p) => p.trim()).filter(Boolean);
-    if (parts.length > 0) return parts[parts.length - 1];
+  // X-Forwarded-For here is NOT the standard single-hop "client, proxy"
+  // chain: verified live that its first entry is client-supplied/spoofable,
+  // AND its last entry is a varying internal AWS hop IP (different on every
+  // request) rather than the real viewer -- so neither end is trustworthy.
+  // CloudFront-Viewer-Address, by contrast, is a header CloudFront itself
+  // injects from the actual TCP connection -- confirmed live that a
+  // client-supplied value of the same header name gets overwritten, so it
+  // can't be spoofed. Format is "ip:port"; strip the port.
+  const viewerAddress = request.headers.get("cloudfront-viewer-address");
+  if (viewerAddress) {
+    const lastColon = viewerAddress.lastIndexOf(":");
+    return lastColon === -1 ? viewerAddress : viewerAddress.slice(0, lastColon);
   }
   return "unknown";
 }
