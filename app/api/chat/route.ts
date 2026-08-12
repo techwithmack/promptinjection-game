@@ -5,9 +5,16 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 import type { ChatMessage } from "@/lib/types";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 // 2.0-flash often has zero free-tier quota; 2.5-flash is the current free-tier default.
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
+// Bounds on request shape, independent of rate limiting — caps the token
+// cost of any single request regardless of how often it's sent.
+const MAX_MESSAGES = 30;
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_TOTAL_LENGTH = 12000;
 
 function getGeminiModelId() {
   return process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
@@ -74,6 +81,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const clientIp = getClientIp(request);
+    const { limited, retryAfterSeconds } = checkRateLimit(clientIp);
+    if (limited) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait a bit before trying again." },
+        {
+          status: 429,
+          headers: retryAfterSeconds
+            ? { "Retry-After": String(retryAfterSeconds) }
+            : undefined,
+        }
+      );
+    }
+
     const body = await request.json();
     const { messages } = body as { messages?: unknown };
 
@@ -84,11 +105,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (messages.length > MAX_MESSAGES) {
+      return NextResponse.json(
+        { error: `Too many messages in one request (max ${MAX_MESSAGES}).` },
+        { status: 400 }
+      );
+    }
+
+    for (const m of messages) {
+      if (isValidMessage(m) && m.content.length > MAX_MESSAGE_LENGTH) {
+        return NextResponse.json(
+          { error: `A message is too long (max ${MAX_MESSAGE_LENGTH} characters).` },
+          { status: 400 }
+        );
+      }
+    }
+
     const history = prepareMessages(messages.filter(isValidMessage));
 
     if (history.length === 0) {
       return NextResponse.json(
         { error: "No valid messages provided." },
+        { status: 400 }
+      );
+    }
+
+    const totalLength = history.reduce((sum, m) => sum + m.content.length, 0);
+    if (totalLength > MAX_TOTAL_LENGTH) {
+      return NextResponse.json(
+        { error: "Conversation is too long. Please start a new chat." },
         { status: 400 }
       );
     }
