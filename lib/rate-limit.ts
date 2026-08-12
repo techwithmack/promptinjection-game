@@ -46,7 +46,17 @@ export function checkRateLimit(key: string): {
 }
 
 export function getClientIp(request: Request): string {
+  // This app runs behind exactly one trusted proxy hop (CloudFront, via
+  // Amplify Hosting), which appends the real viewer IP as the LAST entry in
+  // X-Forwarded-For. Any earlier entries are client-supplied and trivially
+  // spoofable — a client can send "X-Forwarded-For: <anything>" and
+  // CloudFront just appends the real IP after it, so trusting the first
+  // entry lets every request claim a fresh identity and bypass the limiter
+  // entirely. Only the last entry is something the client can't control.
   const xff = request.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
+  if (xff) {
+    const parts = xff.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1];
+  }
   return "unknown";
 }
